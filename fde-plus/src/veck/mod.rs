@@ -25,7 +25,9 @@ pub fn random_subset_indices<S: FftField>(
         index_set.insert(index);
     }
     
-    index_set.into_iter().collect()
+    let mut indices = index_set.into_iter().collect::<Vec<usize>>();
+    indices.sort();
+    indices
 }
 
 #[cfg(test)]
