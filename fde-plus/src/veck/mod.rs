@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
 use ark_ff::FftField;
-use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
-use ark_std::{collections::HashMap, rand::{rngs::StdRng, Rng}};
+use ark_poly::{EvaluationDomain, univariate::SparsePolynomial, GeneralEvaluationDomain};
+use ark_std::{collections::HashMap, rand::{rngs::StdRng, Rng}, One};
 
 pub mod elgamal;
 
@@ -11,23 +11,37 @@ pub fn index_map<S: FftField>(domain: GeneralEvaluationDomain<S>) -> HashMap<S, 
     domain.elements().enumerate().map(|(i, e)| (e, i)).collect()
 }
 
-pub fn random_subset_indices<S: FftField>(
-    domain: &GeneralEvaluationDomain<S>,
+pub fn random_subset_indices(
+    evals_len: usize,
     subset_size: usize,
     rng: &mut StdRng,
 ) -> Vec<usize> {
     let mut index_set = HashSet::<usize>::new();
     for _ in 0..subset_size {
-        let mut index = rng.gen_range(0..domain.size());
+        let mut index = rng.gen_range(0..evals_len);
         while index_set.contains(&index) {
-            index = rng.gen_range(0..domain.size());
+            index = rng.gen_range(0..evals_len);
         }
         index_set.insert(index);
     }
     
-    let mut indices = index_set.into_iter().collect::<Vec<usize>>();
-    indices.sort();
-    indices
+    index_set.into_iter().collect::<Vec<usize>>()
+}
+
+pub fn to_vanishing_poly<S: FftField>(
+    indics: Vec<usize>,
+    domain: GeneralEvaluationDomain<S>,
+) -> SparsePolynomial<S> {
+    let mut poly = SparsePolynomial::from_coefficients_vec(vec![(0, S::one())]);
+    for i in indics {
+        let root = domain.element(i);
+        let x_minus_root = SparsePolynomial::from_coefficients_vec(vec![
+                (0, S::zero() - root), 
+                (1, S::one()),
+            ]);
+        poly = poly.mul(&x_minus_root);
+    }
+    poly
 }
 
 #[cfg(test)]
@@ -52,7 +66,7 @@ mod test {
 
         let mut rng = ark_std::rand::rngs::StdRng::from_seed(seed_bytes);
         let domain = GeneralEvaluationDomain::<<Bls12<ark_bls12_381::Config> as Pairing>::ScalarField>::new(16).unwrap();
-        let indices = random_subset_indices(&domain, 8, &mut rng);
+        let indices = random_subset_indices(domain.size(), 8, &mut rng);
         println!("Random subset indices: {:?}", indices);
     }
 }

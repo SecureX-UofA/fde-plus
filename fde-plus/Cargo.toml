@@ -32,7 +32,7 @@ ark-ec = { version = "0.4", default-features = false }
 ark-ff = { version = "0.4", default-features = false }
 ark-poly = { version = "0.4", default-features = false }
 ark-poly-commit = { version = "0.4", default-features = false }
-ark-serialize = { version = "0.4", default-features = false }
+ark-serialize = { version = "0.4", features = ["derive"] }
 ark-std = { version = "0.4", default-features = false }
 num-bigint = { version = "0.4", features = ["rand"] }
 num-integer = "0.1"
@@ -45,3 +45,7 @@ ark-bls12-381 = "0.4"
 ark-secp256k1 = "0.4"
 criterion = "0.5"
 sha3 = "0.10"
+
+[[bench]]
+name = "kzg_elgamal"
+harness = false
