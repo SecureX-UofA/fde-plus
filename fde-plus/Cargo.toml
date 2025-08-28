@@ -39,13 +39,13 @@ num-integer = "0.1"
 num-prime = "0.4"
 digest = { version = "0.10", default-features = false }
 rayon = { version = "1.8", optional = true }
-
-[dev-dependencies]
 ark-bls12-381 = "0.4"
-ark-secp256k1 = "0.4"
-criterion = "0.5"
 sha3 = "0.10"
 
+[dev-dependencies]
+ark-secp256k1 = "0.4"
+criterion = "0.5"
+
 [[bench]]
-name = "kzg_elgamal"
+name = "elgamal"
 harness = false

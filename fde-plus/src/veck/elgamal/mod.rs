@@ -1,61 +1,62 @@
-#[cfg(test)]
-mod test {
-    use std::cmp::min;
-    use std::fs::File;
-    use std::io::Write;
+use std::{fs::File, io::Write};
 
-    use ark_ff::{PrimeField, BigInteger};
-    use ark_ec::{pairing::Pairing, Group, CurveGroup};
-    use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain, Polynomial};
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
-    use ark_std::rand::rngs::StdRng;
-    use ark_std::rand::{Rng, SeedableRng};
-    use ark_std::{test_rng, UniformRand};
-    use fde::commit::kzg::Powers;
-    use fde::encrypt::elgamal::MAX_BITS;
-    use fde::hash::Hasher;
-    use fde::veck::kzg::elgamal::{EncryptionProof, Proof};
-    use fde::veck::subset_evals;
+use ark_ec::pairing::Pairing;
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
+use fde::veck::kzg::elgamal::{EncryptionProof, Proof};
 
-    use crate::tests::*;
-    use crate::veck::{random_subset_indices, to_vanishing_poly};
+use crate::{Scalar, TestCurve, N, TestHash};
 
-    type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
-    type KzgElgamalProof = Proof<{ N }, TestCurve, TestHash>;
+type KzgElgamalProof = Proof<{ N }, TestCurve, TestHash>;
 
-    const DATA_SIZE: usize = 32;
-    const SUBSET_SIZE: usize = 8;
+type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
 
-    #[derive(CanonicalSerialize, CanonicalDeserialize)]
-    struct Storage {
-        pub tau: Scalar,
-        pub data: Vec<Scalar>,
-        pub encryption: ElgamalEncryptionProof,
-        pub sk: Scalar,
-        pub pk: <TestCurve as Pairing>::G1Affine,
-    }
+#[derive(CanonicalSerialize, CanonicalDeserialize)]
+struct Storage {
+    pub tau: Scalar,
+    pub data: Vec<Scalar>,
+    pub encryption: ElgamalEncryptionProof,
+    pub sk: Scalar,
+    pub pk: <TestCurve as Pairing>::G1Affine,
+}
 
-    fn write_to_file(
-        tau: Scalar,
-        data: Vec<Scalar>,
-        encryption: ElgamalEncryptionProof,
-        sk: Scalar,
-        pk: <TestCurve as Pairing>::G1Affine,
-        filename: &str) -> std::io::Result<()> {
-            let storage = Storage { tau, data, encryption, sk, pk };
-            let mut bytes = Vec::new();
-            storage.serialize_compressed(&mut bytes).unwrap();
-            let mut file = File::create(filename)?;
-            file.write_all(&bytes)?;
-            Ok(())
-    }
-
-    pub fn read_cipher_from(filename: &str)
-        -> (Scalar, Vec<Scalar>, ElgamalEncryptionProof, Scalar, <TestCurve as Pairing>::G1Affine) {
+pub fn read_cipher_from(filename: &str)
+    -> (Scalar, Vec<Scalar>, ElgamalEncryptionProof, Scalar, <TestCurve as Pairing>::G1Affine) {
         let bytes = std::fs::read(filename).unwrap();
         let storage = Storage::deserialize_compressed(&*bytes).unwrap();
         (storage.tau, storage.data, storage.encryption, storage.sk, storage.pk)
-    }
+}
+
+pub fn write_to_file(
+    tau: Scalar,
+    data: Vec<Scalar>,
+    encryption: ElgamalEncryptionProof,
+    sk: Scalar,
+    pk: <TestCurve as Pairing>::G1Affine,
+    filename: &str) -> std::io::Result<()> {
+        let storage = Storage { tau, data, encryption, sk, pk };
+        let mut bytes = Vec::new();
+        storage.serialize_compressed(&mut bytes).unwrap();
+        let mut file = File::create(filename)?;
+        file.write_all(&bytes)?;
+        Ok(())
+}
+
+#[cfg(test)]
+pub mod test {
+    use std::cmp::min;
+
+    use ark_std::rand::{Rng, SeedableRng};
+    use ark_ff::{PrimeField, BigInteger};
+    use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain};
+    use ark_ec::{pairing::Pairing, Group, CurveGroup};
+    use ark_std::{test_rng, UniformRand};
+    use fde::commit::kzg::Powers;
+    use fde::encrypt::elgamal::MAX_BITS;
+
+    use crate::{veck::elgamal::{read_cipher_from, write_to_file, ElgamalEncryptionProof, KzgElgamalProof}, Scalar, TestCurve, UniPoly};
+
+    const DATA_SIZE: usize = 32;
+    const SUBSET_SIZE: usize = 8;
 
     #[test]
     fn test_encryption() {
@@ -67,9 +68,10 @@ mod test {
         let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
         // beta
-        let beta = 1.5f64;
+        // let beta = 1.5f64;
         // number of evaluations to sample
-        let m: usize = ((DATA_SIZE as f64 * beta).ceil() as usize).next_power_of_two();
+        // let m: usize = ((DATA_SIZE as f64 * beta).ceil() as usize).next_power_of_two();
+        let m: usize = 4096;
 
         let data: Vec<Scalar> = (0..m).map(|_| Scalar::rand(rng)).collect();
 
