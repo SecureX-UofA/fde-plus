@@ -25,7 +25,7 @@ parallel = [
 ]
 
 [dependencies]
-fde ={ path = "../fde" }
+fde ={ path = "../fde-forked" }
 
 ark-crypto-primitives = { version = "0.4", default-features = false, features = ["signature"] }
 ark-ec = { version = "0.4", default-features = false }

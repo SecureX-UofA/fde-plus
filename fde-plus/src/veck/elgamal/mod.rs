@@ -96,12 +96,15 @@ pub mod test {
 
         let data_size = data.len();
 
-        let powers = Powers::<TestCurve>::unsafe_setup(tau, (data_size + 1).max(MAX_BITS * 4));
+        let powers = Powers::<TestCurve>::unsafe_setup(tau, (data_size + 1));
+
+        println!("Completed setup");
 
         // beta
         let beta = 1.5f64;
         // number of evaluations to sample
-        let m: usize = ((DATA_SIZE as f64 * beta).ceil() as usize).next_power_of_two();
+        // let m: usize = ((DATA_SIZE as f64 * beta).ceil() as usize).next_power_of_two();
+        let m: usize = 32;
         let m_domain = GeneralEvaluationDomain::new(m).expect("valid domain");
 
         // Interpolate original polynomial and compute its KZG commitment.
@@ -113,7 +116,8 @@ pub mod test {
         let lambda = 128f64;
         let order_subset = min(SUBSET_SIZE + 1, (lambda / (beta - 1f64)).ceil() as usize);
 
-        let subdomain_size = order_subset.next_power_of_two();
+        // let subdomain_size = order_subset.next_power_of_two();
+        let subdomain_size = 16;
 
         // get subdomain with size suitable for interpolating a polynomial with SUBSET_SIZE
         // coefficients
