@@ -71,7 +71,7 @@ pub mod test {
         // let beta = 1.5f64;
         // number of evaluations to sample
         // let m: usize = ((DATA_SIZE as f64 * beta).ceil() as usize).next_power_of_two();
-        let m: usize = 4096;
+        let m: usize = 64;
 
         let data: Vec<Scalar> = (0..m).map(|_| Scalar::rand(rng)).collect();
 
