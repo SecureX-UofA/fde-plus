@@ -96,7 +96,7 @@ pub mod test {
 
         let data_size = data.len();
 
-        let powers = Powers::<TestCurve>::unsafe_setup(tau, (data_size + 1));
+        let powers = Powers::<TestCurve>::unsafe_setup(tau, (data_size + 1).max(MAX_BITS * 4));
 
         println!("Completed setup");
 
@@ -127,12 +127,13 @@ pub mod test {
         let subset_indices = fde::veck::subset_indices(&index_map, &subdomain);
         let subset_evaluations = fde::veck::subset_evals(&m_evaluations, &subset_indices, subdomain);
 
+        let rng = &mut test_rng();
+
         let f_s_poly: UniPoly = subset_evaluations.interpolate_by_ref();
         let com_f_s_poly = powers.commit_g1(&f_s_poly);
 
-        let sub_encryption_proof = encryption_proof.subset(&subset_indices);
-
-        let rng = &mut test_rng();
+        let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
+        sub_encryption_proof.generate_range_proof(&subset_evaluations.evals, &powers, rng);
 
         let proof = KzgElgamalProof::new(
             &f_poly,
