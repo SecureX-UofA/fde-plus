@@ -1,11 +1,12 @@
-use ark_ec::pairing::Pairing;
+use ark_ec::{pairing::Pairing, Group, CurveGroup};
 use ark_ff::PrimeField;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain};
-use ark_std::test_rng;
+use ark_std::{test_rng, Zero, UniformRand};
 use criterion::{criterion_group, criterion_main, Criterion};
 use fde::commit::kzg::Powers;
 use fde::encrypt::elgamal::MAX_BITS;
+use fde::veck::kzg::elgamal::EncryptionProof;
 
 const N: usize = Scalar::MODULUS_BIT_SIZE as usize / fde::encrypt::elgamal::MAX_BITS + 1;
 
@@ -14,26 +15,39 @@ type TestHash = sha3::Keccak256;
 type Scalar = <TestCurve as Pairing>::ScalarField;
 type UniPoly = DensePolynomial<Scalar>;
 type Proof = fde::veck::kzg::elgamal::Proof<{ N }, TestCurve, TestHash>;
+type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
 
 fn bench_proof(c: &mut Criterion) {
-    use fde_plus::veck::elgamal::read_cipher_from;
-
     let mut group = c.benchmark_group("kzg-elgamal");
     group.sample_size(10);
 
     let rng = &mut test_rng();
 
-    let (tau, data, encryption_proof, encryption_sk, encryption_pk) = read_cipher_from(&"data.bin");
-    let powers = Powers::<TestCurve>::unsafe_setup(tau, (data.len() + 1).max(MAX_BITS * 4));
+    let tau = Scalar::rand(rng);
+    let encryption_sk = Scalar::rand(rng);
+    let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
-    let domain = GeneralEvaluationDomain::new(data.len()).expect("valid domain");
+    let m = 48usize;
+    let mut data: Vec<Scalar> = (0..m).map(|_| Scalar::rand(rng)).collect();
+    let next_pow2 = m.next_power_of_two();
+
+    let powers = Powers::<TestCurve>::unsafe_setup(tau, (next_pow2 + 1).max(MAX_BITS * 4));
+
+    let pad = next_pow2 - m;
+    if pad > 0 {
+        let pad_evals = vec![Scalar::zero(); pad];
+        data.extend_from_slice(&pad_evals);
+    }
+    let encryption_proof = ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
+
+    let domain = GeneralEvaluationDomain::new(next_pow2).expect("valid domain");
     let index_map = fde::veck::index_map(domain);
 
     let evaluations = Evaluations::from_vec_and_domain(data, domain);
     let f_poly: UniPoly = evaluations.interpolate_by_ref();
     let com_f_poly = powers.commit_g1(&f_poly);
 
-    for i in 8..=10 {
+    for i in 4..=5 {
         let size_sr = 1 << i;
         let proof_prv_name = format!("proof-prove-{}", size_sr);
         let range_proof_name = format!("range-proof-{}", size_sr);
