@@ -44,6 +44,16 @@ pub fn to_vanishing_poly<S: FftField>(
     poly
 }
 
+pub fn compute_beta(size_sr: usize, lambda: usize) -> f64 {
+    let lower_power = (lambda as f64) / (size_sr as f64);
+    let upper_power = (lambda as f64) / ((size_sr - 1) as f64);
+    let two_lower_power = 2f64.powf(lower_power);
+    let two_upper_power = 2f64.powf(upper_power);
+    let beta1 = two_lower_power / (2f64 - two_lower_power);
+    let beta2 = two_upper_power / (2f64 - two_upper_power);
+    (beta1 + beta2) / 2f64
+}
+
 #[cfg(test)]
 mod test {
     use ark_poly::{EvaluationDomain, GeneralEvaluationDomain};
@@ -68,5 +78,19 @@ mod test {
         let domain = GeneralEvaluationDomain::<<Bls12<ark_bls12_381::Config> as Pairing>::ScalarField>::new(16).unwrap();
         let indices = random_subset_indices(domain.size(), 8, &mut rng);
         println!("Random subset indices: {:?}", indices);
+    }
+
+    #[test]
+    fn test_compute_beta() {
+        for i in 8..=20 {
+            let size_sr = 1 << i;
+            let beta = super::compute_beta(size_sr, 128);
+            println!("size_sr: {}, beta: {}", size_sr, beta);
+
+            let denominator = (beta * 2f64 / (beta + 1f64)).log2();
+            let sr = (128f64 / denominator).ceil() as usize;
+            println!("size_sr: {}, computed_sr: {}", size_sr, sr);
+            assert_eq!(size_sr, sr);
+        }
     }
 }
