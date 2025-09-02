@@ -62,7 +62,6 @@ pub mod test {
     fn test_encryption() {
         let rng = &mut test_rng();
         let tau = Scalar::rand(rng);
-        let powers = Powers::<TestCurve>::unsafe_setup(tau, (DATA_SIZE + 1).max(MAX_BITS * 4));
 
         let encryption_sk = Scalar::rand(rng);
         let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
@@ -74,6 +73,8 @@ pub mod test {
         let m: usize = 64;
 
         let data: Vec<Scalar> = (0..m).map(|_| Scalar::rand(rng)).collect();
+
+        let powers = Powers::<TestCurve>::unsafe_setup(tau, m + 1);
 
         let encryption = ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
 
@@ -94,10 +95,6 @@ pub mod test {
     fn test_read_storage() {
         let (tau, data, encryption_proof, sk, pk) = read_cipher_from(&"data.bin");
 
-        let data_size = data.len();
-
-        let powers = Powers::<TestCurve>::unsafe_setup(tau, (data_size + 1).max(MAX_BITS * 4));
-
         println!("Completed setup");
 
         // beta
@@ -107,8 +104,11 @@ pub mod test {
         let m: usize = 32;
         let m_domain = GeneralEvaluationDomain::new(m).expect("valid domain");
 
+        let powers = Powers::<TestCurve>::unsafe_setup(tau, (m + 1).max(MAX_BITS * 4));
+
         // Interpolate original polynomial and compute its KZG commitment.
         // This is performed only once by the server
+        let data = data[..m].to_vec();
         let m_evaluations = Evaluations::from_vec_and_domain(data, m_domain);
         let f_poly: UniPoly = m_evaluations.interpolate_by_ref();
         let com_f_poly = powers.commit_g1(&f_poly);
