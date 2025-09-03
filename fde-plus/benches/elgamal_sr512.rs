@@ -29,7 +29,7 @@ fn bench_proof(c: &mut Criterion) {
     let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
     const UPPER_BOUND: usize = 12;
-    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND + 1).max(MAX_BITS * 4));
+    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND) * 8 + 1);
 
     const LAMBDA: usize = 128;
     const SIZE_SUBSET: usize = 512;
@@ -62,9 +62,9 @@ fn bench_proof(c: &mut Criterion) {
         let f_poly: UniPoly = evaluations.interpolate_by_ref();
         let com_f_poly = powers.commit_g1(&f_poly);
 
-        let proof_prv_name = format!("proof-prove-l{}-sr{}", data_size, size_sr);
-        let range_proof_name = format!("range-proof-l{}-sr{}", data_size, size_sr);
-        let proof_vfy_name = format!("proof-verify-l{}-sr{}", data_size, size_sr);
+        let proof_prv_name = format!("proof-prove-l{}-sr{}-m{}", data_size, size_sr, m);
+        let range_proof_name = format!("range-proof-l{}-sr{}-m{}", data_size, size_sr, m);
+        let proof_vfy_name = format!("proof-verify-l{}-sr{}-m{}", data_size, size_sr, m);
 
         let subdomain = GeneralEvaluationDomain::new(size_sr).unwrap();
         let subset_indices = fde::veck::subset_indices(&index_map, &subdomain);
