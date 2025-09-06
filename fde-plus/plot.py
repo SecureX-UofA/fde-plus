@@ -9,9 +9,11 @@ sr = [256, 512, 1024]
 dir = "./target/criterion/kzg-elgamal/"
 folders = [name for name in os.listdir(dir) if os.path.isdir(os.path.join(dir, name))]
 
-prove_pattern = re.compile(r"^proof-prove-l(\d+)-sr(\d+)-m(\d+)$")
-verify_pattern = re.compile(r"^proof-verify-l(\d+)-sr(\d+)-m(\d+)$")
-range_pattern = re.compile(r"^range-proof-l(\d+)-sr(\d+)-m(\d+)$")
+suffix = "l(\d+)-m(\d+)-rsr(\d+)-sr(\d+)"
+enc_patter = re.compile(r"^proof-encryption-" + suffix + "$")
+prove_pattern = re.compile(r"^proof-prove-" + suffix + "$")
+verify_pattern = re.compile(r"^proof-verify-" + suffix + "$")
+range_pattern = re.compile(r"^range-proof-" + suffix + "$")
 
 def append_bench_data(folder_map):
     folder_name = folder_map['name']
@@ -25,68 +27,85 @@ def append_bench_data(folder_map):
             except Exception as e:
                 print(f"Failed to load {estimates_path}: {e}")
 
-prove_folders = []
-verify_folders = []
-range_folders = []
+enc_by_sr = {}
+prove_by_sr = {}
+verify_by_sr = {}
+range_by_sr = {}
 
 for folder in folders:
+    m = enc_patter.match(folder)
+    if m:
+        A, B, C, D = map(int, m.groups())
+        entry = {'name': folder, 'l': A, 'm': B, 'rsr': C, 'sr': D}
+        append_bench_data(entry)
+        sr_val = entry['sr']
+        if sr_val not in enc_by_sr:
+            enc_by_sr[sr_val] = []
+        enc_by_sr[sr_val].append(entry)
+        continue
     m = prove_pattern.match(folder)
     if m:
-        A, B, C = map(int, m.groups())
-        entry = {'name': folder, 'l': A, 'sr': B, 'm': C}
+        A, B, C, D = map(int, m.groups())
+        entry = {'name': folder, 'l': A, 'm': B, 'rsr': C, 'sr': D}
         append_bench_data(entry)
-        prove_folders.append(entry)
+        sr_val = entry['sr']
+        if sr_val not in prove_by_sr:
+            prove_by_sr[sr_val] = []
+        prove_by_sr[sr_val].append(entry)
         continue
     m = verify_pattern.match(folder)
     if m:
-        A, B, C = map(int, m.groups())
-        entry = {'name': folder, 'l': A, 'sr': B, 'm': C}
+        A, B, C, D = map(int, m.groups())
+        entry = {'name': folder, 'l': A, 'm': B, 'rsr': C, 'sr': D}
         append_bench_data(entry)
-        verify_folders.append(entry)
+        sr_val = entry['sr']
+        if sr_val not in verify_by_sr:
+            verify_by_sr[sr_val] = []
+        verify_by_sr[sr_val].append(entry)
         continue
     m = range_pattern.match(folder)
     if m:
-        A, B, C = map(int, m.groups())
-        entry = {'name': folder, 'l': A, 'sr': B, 'm': C}
+        A, B, C, D = map(int, m.groups())
+        entry = {'name': folder, 'l': A, 'm': B, 'rsr': C, 'sr': D}
         append_bench_data(entry)
-        range_folders.append(entry)
-
-# print("Prove folders:", prove_folders)
-# print("Verify folders:", verify_folders)
-# print("Range folders:", range_folders)
-
-# sr_value in [256, 512, 1024]
-def filter_by_sr(entries, sr_value):
-    sr_common = [2, 3, 5, 9, 17, 33, 65, 129]
-    sr_values = [sr_value] * (12 - len(sr_common))
-    sr_values.extend(sr_common)
-    return [entry for entry in entries if entry['sr'] in sr_values]
+        sr_val = entry['sr']
+        if sr_val not in range_by_sr:
+            range_by_sr[sr_val] = []
+        range_by_sr[sr_val].append(entry)
+        continue
 
 plt.figure(figsize=(8, 6))
 sr_values = [256, 512, 1024]
 
 for sr in sr_values:
-    sr_entries = filter_by_sr(prove_folders, sr)
-    sr_entries_sorted = sorted(sr_entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in sr_entries_sorted]
-    y = [entry['bench'] for entry in sr_entries_sorted]
-    plt.plot(x, y, marker='o', label=f'prove-sr={sr}')
+    entries = enc_by_sr.get(sr, [])
+    entries_sorted = sorted(entries, key=lambda x: x['l'])
+    x = [entry['l'] for entry in entries_sorted]
+    y = [entry['bench'] for entry in entries_sorted]
+    plt.plot(x, y, marker='o', label=f'enc-sr={sr}')
 
 for sr in sr_values:
-    sr_entries = filter_by_sr(verify_folders, sr)
-    sr_entries_sorted = sorted(sr_entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in sr_entries_sorted]
-    y = [entry['bench'] for entry in sr_entries_sorted]
-    plt.plot(x, y, marker='p', label=f'verify-sr={sr}')
+    entries = prove_by_sr.get(sr, [])
+    entries_sorted = sorted(entries, key=lambda x: x['l'])
+    x = [entry['l'] for entry in entries_sorted]
+    y = [entry['bench'] for entry in entries_sorted]
+    plt.plot(x, y, marker='p', label=f'prove-sr={sr}')
 
 for sr in sr_values:
-    sr_entries = filter_by_sr(range_folders, sr)
-    sr_entries_sorted = sorted(sr_entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in sr_entries_sorted]
-    y = [entry['bench'] for entry in sr_entries_sorted]
+    entries = verify_by_sr.get(sr, [])
+    entries_sorted = sorted(entries, key=lambda x: x['l'])
+    x = [entry['l'] for entry in entries_sorted]
+    y = [entry['bench'] for entry in entries_sorted]
     print(f"Rangeproof sr={sr}: {y}")
-    plt.plot(x, y, marker='s', label=f'rangeproof-sr={sr}')
-    
+    plt.plot(x, y, marker='s', label=f'verify-sr={sr}')
+
+for sr in sr_values:
+    entries = range_by_sr.get(sr, [])
+    entries_sorted = sorted(entries, key=lambda x: x['l'])
+    x = [entry['l'] for entry in entries_sorted]
+    y = [entry['bench'] for entry in entries_sorted]
+    print(f"Rangeproof sr={sr}: {y}")
+    plt.plot(x, y, marker='^', label=f'rangeproof-sr={sr}')
 
 plt.xlabel('l')
 plt.ylabel('Time (ms)')
