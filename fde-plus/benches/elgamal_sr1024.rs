@@ -9,7 +9,7 @@ use fde::encrypt::elgamal::MAX_BITS;
 use fde::veck::kzg::elgamal::EncryptionProof;
 use fde_plus::veck::compute_beta;
 
-const N: usize = Scalar::MODULUS_BIT_SIZE as usize / fde::encrypt::elgamal::MAX_BITS + 1;
+const N: usize = Scalar::MODULUS_BIT_SIZE as usize / MAX_BITS + 1;
 
 type TestCurve = ark_bls12_381::Bls12_381;
 type TestHash = sha3::Keccak256;
@@ -17,6 +17,8 @@ type Scalar = <TestCurve as Pairing>::ScalarField;
 type UniPoly = DensePolynomial<Scalar>;
 type Proof = fde::veck::kzg::elgamal::Proof<{ N }, TestCurve, TestHash>;
 type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
+
+const SIZE_SUBSET: usize = 1024;
 
 fn bench_proof(c: &mut Criterion) {
     let mut group = c.benchmark_group("kzg-elgamal");
@@ -32,8 +34,7 @@ fn bench_proof(c: &mut Criterion) {
     let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND) * 8 + 1);
 
     const LAMBDA: usize = 128;
-    const SIZE_SUBSET: usize = 1024;
-
+    
     for i in 0..=UPPER_BOUND {
         let data_size = 1 << i;
 
@@ -53,6 +54,13 @@ fn bench_proof(c: &mut Criterion) {
             let pad_evals = vec![Scalar::zero(); pad];
             data.extend_from_slice(&pad_evals);
         }
+        let suffix = format!("l{}-m{}-rsr{}-sr{}", data_size, m, size_sr, SIZE_SUBSET);
+        let proof_enc_name = format!("proof-encryption-{}", suffix);
+        group.bench_function(&proof_enc_name, |b| {
+            b.iter(|| {
+                ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
+            })
+        });
         let encryption_proof = ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
 
         let domain = GeneralEvaluationDomain::new(next_pow2).expect("valid domain");
@@ -62,10 +70,6 @@ fn bench_proof(c: &mut Criterion) {
         let f_poly: UniPoly = evaluations.interpolate_by_ref();
         let com_f_poly = powers.commit_g1(&f_poly);
 
-        let proof_prv_name = format!("proof-prove-l{}-sr{}-m{}", data_size, size_sr, m);
-        let range_proof_name = format!("range-proof-l{}-sr{}-m{}", data_size, size_sr, m);
-        let proof_vfy_name = format!("proof-verify-l{}-sr{}-m{}", data_size, size_sr, m);
-
         let subdomain = GeneralEvaluationDomain::new(size_sr).unwrap();
         let subset_indices = fde::veck::subset_indices(&index_map, &subdomain);
         let subset_evaluations = fde::veck::subset_evals(&evaluations, &subset_indices, subdomain);
@@ -73,8 +77,20 @@ fn bench_proof(c: &mut Criterion) {
         let f_s_poly: UniPoly = subset_evaluations.interpolate_by_ref();
         let com_f_s_poly = powers.commit_g1(&f_s_poly);
 
+        let range_proof_name = format!("range-proof-{}", suffix);
+        group.bench_function(&range_proof_name, |b| {
+            let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
+            b.iter(|| {
+                sub_encryption_proof
+                    .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+            })
+        });
+        let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
+        sub_encryption_proof
+                .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+
+        let proof_prv_name = format!("proof-prove-{}", suffix);
         group.bench_function(&proof_prv_name, |b| {
-            let sub_encryption_proof = encryption_proof.subset(&subset_indices);
             b.iter(|| {
                 Proof::new(
                     &f_poly,
@@ -87,17 +103,9 @@ fn bench_proof(c: &mut Criterion) {
                 .unwrap();
             })
         });
-
-        group.bench_function(&range_proof_name, |b| {
-            let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
-            b.iter(|| {
-                sub_encryption_proof
-                    .generate_range_proof(&subset_evaluations.evals, &powers, rng);
-            })
-        });
-
+        
+        let proof_vfy_name = format!("proof-verify-{}", suffix);
         group.bench_function(&proof_vfy_name, |b| {
-            let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
             let proof = Proof::new(
                 &f_poly,
                 &f_s_poly,
@@ -107,8 +115,7 @@ fn bench_proof(c: &mut Criterion) {
                 rng,
             )
             .unwrap();
-            sub_encryption_proof
-                .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+            
             b.iter(|| {
                 assert!(proof
                     .verify(com_f_poly, com_f_s_poly, encryption_pk, &powers)

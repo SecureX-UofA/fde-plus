@@ -8,7 +8,7 @@ use crate::{Scalar, TestCurve, N, TestHash};
 
 // type KzgElgamalProof = Proof<{ N }, TestCurve, TestHash>;
 
-// type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
+type ElgamalEncryptionProof = EncryptionProof<{ N }, TestCurve, TestHash>;
 
 // #[derive(CanonicalSerialize, CanonicalDeserialize)]
 // struct Storage {
