@@ -38,8 +38,8 @@ fn bench_proof(c: &mut Criterion) {
     for i in 0..=UPPER_BOUND {
         let data_size = 1 << i;
 
-        let (size_sr, m) = if SIZE_SUBSET > data_size + 1 {
-            (data_size + 1, data_size + 1)
+        let (size_sr, m) = if SIZE_SUBSET > data_size {
+            (data_size, data_size)
         } else {
             let beta = compute_beta(SIZE_SUBSET, LAMBDA);
             let m = (data_size as f64 * beta).ceil() as usize;
@@ -55,12 +55,12 @@ fn bench_proof(c: &mut Criterion) {
             data.extend_from_slice(&pad_evals);
         }
         let suffix = format!("l{}-m{}-rsr{}-sr{}", data_size, m, size_sr, SIZE_SUBSET);
-        let proof_enc_name = format!("proof-encryption-{}", suffix);
-        group.bench_function(&proof_enc_name, |b| {
-            b.iter(|| {
-                ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
-            })
-        });
+        // let proof_enc_name = format!("proof-encryption-{}", suffix);
+        // group.bench_function(&proof_enc_name, |b| {
+        //     b.iter(|| {
+        //         ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
+        //     })
+        // });
         let encryption_proof = ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
 
         let domain = GeneralEvaluationDomain::new(next_pow2).expect("valid domain");
@@ -82,12 +82,12 @@ fn bench_proof(c: &mut Criterion) {
             let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
             b.iter(|| {
                 sub_encryption_proof
-                    .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+                    .generate_range_proof(&subset_evaluations.evals, &powers);
             })
         });
         let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
         sub_encryption_proof
-                .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+            .generate_range_proof(&subset_evaluations.evals, &powers);
 
         let proof_prv_name = format!("proof-prove-{}", suffix);
         group.bench_function(&proof_prv_name, |b| {

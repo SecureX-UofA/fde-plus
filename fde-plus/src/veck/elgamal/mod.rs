@@ -208,7 +208,7 @@ pub mod test {
         println!("Start generating range proof");
         let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
         sub_encryption_proof
-                .generate_range_proof(&subset_evaluations.evals, &powers, rng);
+            .generate_range_proof(&subset_evaluations.evals, &powers);
         let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
         println!("Generate range proof, elapsed time: {} [s]", elapsed);
 
