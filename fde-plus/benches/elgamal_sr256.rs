@@ -1,7 +1,11 @@
+use std::fs::File;
+use std::io::Write;
+
 use ark_ec::{pairing::Pairing, Group, CurveGroup};
 use ark_ff::PrimeField;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain};
+use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use ark_std::{test_rng, Zero, UniformRand};
 use criterion::{criterion_group, criterion_main, Criterion};
 use fde::commit::kzg::Powers;
@@ -26,12 +30,24 @@ fn bench_proof(c: &mut Criterion) {
 
     let rng = &mut test_rng();
 
-    let tau = Scalar::rand(rng);
     let encryption_sk = Scalar::rand(rng);
     let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
     const UPPER_BOUND: usize = 22;
-    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND).max(SIZE_SUBSET * 8) + 1);
+
+    // write powers to disk
+    // let mut bytes = Vec::new();
+    // powers.serialize_compressed(&mut bytes).unwrap();
+    // let mut file = File::create("powers.bin").unwrap();
+    // let _ = file.write_all(&bytes);
+
+    println!("KZG setup...");
+    let t_start = std::time::Instant::now();
+    let bytes = std::fs::read("powers.bin").unwrap();
+    let powers = Powers::deserialize_compressed(&*bytes)
+        .unwrap();
+    let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
+    println!("KZG setup, elapsed time: {} [s]", elapsed);
 
     const LAMBDA: usize = 128;
     
