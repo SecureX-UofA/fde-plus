@@ -30,8 +30,8 @@ fn bench_proof(c: &mut Criterion) {
     let encryption_sk = Scalar::rand(rng);
     let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
-    const UPPER_BOUND: usize = 12;
-    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND) * 8 + 1);
+    const UPPER_BOUND: usize = 22;
+    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND).max(SIZE_SUBSET * 8) + 1);
 
     const LAMBDA: usize = 128;
     
@@ -63,10 +63,10 @@ fn bench_proof(c: &mut Criterion) {
         // });
         let encryption_proof = ElgamalEncryptionProof::new(&data, &encryption_pk, &powers, rng);
 
-        let domain = GeneralEvaluationDomain::new(next_pow2).expect("valid domain");
+        let domain = GeneralEvaluationDomain::new(data_size).expect("valid domain");
         let index_map = fde::veck::index_map(domain);
 
-        let evaluations = Evaluations::from_vec_and_domain(data, domain);
+        let evaluations = Evaluations::from_vec_and_domain(data[..data_size].to_vec(), domain);
         let f_poly: UniPoly = evaluations.interpolate_by_ref();
         let com_f_poly = powers.commit_g1(&f_poly);
 
