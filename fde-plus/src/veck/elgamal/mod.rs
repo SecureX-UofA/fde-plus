@@ -158,15 +158,15 @@ pub mod test {
         let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
         const UPPER_BOUND: usize = 12;
-        let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND) * 8 + 1);
+        let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND).max(SIZE_SUBSET * 8) + 1);
 
         const LAMBDA: usize = 128;
-        const SIZE_SUBSET: usize = 1024;
+        const SIZE_SUBSET: usize = 256;
 
         let data_size = 1024;
 
-        let (size_sr, m) = if SIZE_SUBSET > data_size + 1 {
-            (data_size + 1, data_size + 1)
+        let (size_sr, m) = if SIZE_SUBSET > data_size {
+            (data_size, data_size)
         } else {
             let beta = compute_beta(SIZE_SUBSET, LAMBDA);
             let m = (data_size as f64 * beta).ceil() as usize;
@@ -187,10 +187,10 @@ pub mod test {
         let elapsed = std::time::Instant::now().duration_since(t_start).as_millis();
         println!("Generated encryption proofs, elapsed time: {} [ms]", elapsed);
 
-        let domain = GeneralEvaluationDomain::new(next_pow2).expect("valid domain");
+        let domain = GeneralEvaluationDomain::new(data_size).expect("valid domain");
         let index_map = fde::veck::index_map(domain);
 
-        let evaluations = Evaluations::from_vec_and_domain(data, domain);
+        let evaluations = Evaluations::from_vec_and_domain(data[..data_size].to_vec(), domain);
         let f_poly: UniPoly = evaluations.interpolate_by_ref();
         let t_start = std::time::Instant::now();
         let com_f_poly = powers.commit_g1(&f_poly);
@@ -212,6 +212,7 @@ pub mod test {
         let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
         println!("Generate range proof, elapsed time: {} [s]", elapsed);
 
+        let t_start = std::time::Instant::now();
         let proof = Proof::new(
             &f_poly,
             &f_s_poly,
@@ -220,6 +221,8 @@ pub mod test {
             &powers,
             rng,
         ).unwrap();
+        let elapsed = std::time::Instant::now().duration_since(t_start).as_millis();
+        println!("Proving, elapsed time: {} [ms]", elapsed);
             
         let t_start = std::time::Instant::now();
         assert!(proof.verify(com_f_poly, com_f_s_poly, encryption_pk, &powers).is_ok());

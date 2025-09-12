@@ -24,3 +24,5 @@ debug
 #.idea/
 .DS_Store
 fde-plus/data.bin
+snark/go.sum
+snark/main
