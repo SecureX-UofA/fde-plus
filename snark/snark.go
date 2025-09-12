@@ -1,4 +1,4 @@
-package main
+package snark
 
 import (
 	"fmt"
@@ -149,9 +149,20 @@ func mustBig(n *frbls.Element) *big.Int {
 }
 
 func main() {
-	runtime.GOMAXPROCS(1)
+	cs, pk, vk, skBI := setup(1)
+	pi, proof := prove(skBI, pk, cs)
+	verify(proof, vk, pi, cs)
+}
+
+func setup(num_cores int) (
+	constraint.ConstraintSystem,
+	groth16.ProvingKey,
+	groth16.VerifyingKey,
+	*big.Int,
+) {
+	runtime.GOMAXPROCS(num_cores)
 	// make sure we time a single core unless you override with env
-	fmt.Printf("Running with GOMAXPROCS=%d (NumCPU=%d)\n", runtime.GOMAXPROCS(1), runtime.NumCPU())
+	fmt.Printf("Running with GOMAXPROCS=%d (NumCPU=%d)\n", num_cores, runtime.NumCPU())
 
 	// ---- 1) build circuit
 	start := time.Now()
@@ -178,8 +189,7 @@ func main() {
 	}
 	skBI := mustBig(&skBLS)
 
-	pi, proof := prove(skBI, pk, cs)
-	verify(proof, vk, pi, cs)
+	return cs, pk, vk, skBI
 }
 
 func prove(
@@ -187,6 +197,7 @@ func prove(
 	pk groth16.ProvingKey,
 	cs constraint.ConstraintSystem,
 ) (witness.Witness, groth16.Proof) {
+	start := time.Now()
 	// Random base h0 and vk = h0^sk
 	var alpha frbls.Element
 	if _, err := alpha.SetRandom(); err != nil {
@@ -271,12 +282,11 @@ func prove(
 		log.Fatal(err)
 	}
 
-	startProve := time.Now()
 	proof, err := groth16.Prove(cs, pk, witness)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Prove:   %v\n", time.Since(startProve))
+	fmt.Printf("Prove:   %v\n", time.Since(start))
 
 	return pi, proof
 }

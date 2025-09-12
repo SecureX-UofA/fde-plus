@@ -1,4 +1,4 @@
-module main
+module fde/snark
 
 go 1.24.2
 
