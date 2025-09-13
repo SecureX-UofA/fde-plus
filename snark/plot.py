@@ -60,6 +60,30 @@
 # Verify:  20.648826ms
 # Constraints: 2057687
 # OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).
+# 16
+# Running with GOMAXPROCS=16 (NumCPU=32)
+# 15:06:52 INF compiling circuit
+# 15:06:52 INF parsed circuit inputs nbPublic=2564 nbSecret=513
+# 15:06:57 INF building constraint builder nbConstraints=2057687
+# Compile: 4.745172806s (field bits=377)
+# Setup:   3m16.173061241s
+# 15:10:13 DBG constraint system solver done nbConstraints=2057687 took=334.229476
+# 15:10:23 DBG prover done acceleration=none backend=groth16 curve=bw6_761 nbConstraints=2057687 took=9522.747694
+# Prove:   9.95626965s
+# 15:10:23 DBG verifier done backend=groth16 curve=bw6_761 took=13.69848
+# Verify:  13.726571ms
+# Constraints: 2057687
+# OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).
+# 32
+# Compile: 4.803264164s (field bits=377)
+# Setup:   2m33.735314571s
+# 15:13:49 DBG constraint system solver done nbConstraints=2057687 took=518.883512
+# 15:13:57 DBG prover done acceleration=none backend=groth16 curve=bw6_761 nbConstraints=2057687 took=7432.701345
+# Prove:   8.050962112s
+# 15:13:57 DBG verifier done backend=groth16 curve=bw6_761 took=14.860675
+# Verify:  14.907403ms
+# Constraints: 2057687
+# OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).
 # 1024
 # 1
 # Compile: 9.804315136s (field bits=377)
@@ -79,5 +103,25 @@
 # Prove:   25.589297893s
 # 21:18:47 DBG verifier done backend=groth16 curve=bw6_761 took=34.811057
 # Verify:  34.843066ms
+# Constraints: 4113367
+# OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).
+# 16
+# Compile: 9.037782615s (field bits=377)
+# Setup:   6m32.021484537s
+# 15:22:22 DBG constraint system solver done nbConstraints=4113367 took=713.027942
+# 15:22:40 DBG prover done acceleration=none backend=groth16 curve=bw6_761 nbConstraints=4113367 took=17991.02137
+# Prove:   18.902309669s
+# 15:22:40 DBG verifier done backend=groth16 curve=bw6_761 took=27.145153
+# Verify:  27.206221ms
+# Constraints: 4113367
+# OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).
+# 32
+# Compile: 8.679149133s (field bits=377)
+# Setup:   5m3.87681747s
+# 15:31:22 DBG constraint system solver done nbConstraints=4113367 took=593.880974
+# 15:31:37 DBG prover done acceleration=none backend=groth16 curve=bw6_761 nbConstraints=4113367 took=14326.373853
+# Prove:   15.126562357s
+# 15:31:37 DBG verifier done backend=groth16 curve=bw6_761 took=19.495225
+# Verify:  19.531147ms
 # Constraints: 4113367
 # OK: proof verified on BW6-761 with native BLS12-377 G1 arithmetic + MiMC(PRF) + range checks (< r_377).

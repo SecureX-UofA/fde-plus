@@ -151,7 +151,7 @@ func mustBig(n *frbls.Element) *big.Int {
 }
 
 func main() {
-	cs, pk, vk, skBI := setup(8)
+	cs, pk, vk, skBI := setup(32)
 	pi, proof := prove(skBI, pk, cs)
 	verify(proof, vk, pi, cs)
 }
