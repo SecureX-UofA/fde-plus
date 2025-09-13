@@ -47,5 +47,13 @@ ark-secp256k1 = "0.4"
 criterion = "0.5"
 
 [[bench]]
+name = "elgamal_sr256"
+harness = false
+
+[[bench]]
 name = "elgamal_sr512"
+harness = false
+
+[[bench]]
+name = "elgamal_sr1024"
 harness = false

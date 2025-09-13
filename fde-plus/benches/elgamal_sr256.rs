@@ -49,6 +49,9 @@ fn bench_proof(c: &mut Criterion) {
     let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
     println!("KZG setup, elapsed time: {} [s]", elapsed);
 
+    // let tau = Scalar::rand(rng);
+    // let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND).max(SIZE_SUBSET * 8) + 1);
+
     const LAMBDA: usize = 128;
     
     for i in 0..=UPPER_BOUND {
@@ -103,16 +106,22 @@ fn bench_proof(c: &mut Criterion) {
         });
         let mut sub_encryption_proof = encryption_proof.subset(&subset_indices);
         sub_encryption_proof
-                .generate_range_proof(&subset_evaluations.evals, &powers);
+            .generate_range_proof(&subset_evaluations.evals, &powers);
+
+        let ciphers = encryption_proof.ciphers.iter().map(|c| {
+            c.c1()
+        })
+        .collect();
 
         let proof_prv_name = format!("proof-prove-{}", suffix);
         group.bench_function(&proof_prv_name, |b| {
             b.iter(|| {
-                Proof::new(
+                Proof::new_v2(
                     &f_poly,
                     &f_s_poly,
                     &encryption_sk,
                     sub_encryption_proof.clone(),
+                    &ciphers,
                     &powers,
                     rng,
                 )
@@ -121,20 +130,20 @@ fn bench_proof(c: &mut Criterion) {
         });
         
         let proof_vfy_name = format!("proof-verify-{}", suffix);
+        let (proof, challenge)  = Proof::new_v2(
+            &f_poly,
+            &f_s_poly,
+            &encryption_sk,
+            sub_encryption_proof.clone(),
+            &ciphers,
+            &powers,
+            rng,
+        )
+        .unwrap();
         group.bench_function(&proof_vfy_name, |b| {
-            let proof = Proof::new(
-                &f_poly,
-                &f_s_poly,
-                &encryption_sk,
-                sub_encryption_proof.clone(),
-                &powers,
-                rng,
-            )
-            .unwrap();
-            
             b.iter(|| {
                 assert!(proof
-                    .verify(com_f_poly, com_f_s_poly, encryption_pk, &powers)
+                    .verify_v2(com_f_poly, com_f_s_poly, encryption_pk, challenge, &powers)
                     .is_ok())
             })
         });
