@@ -77,37 +77,44 @@ for folder in folders:
 plt.figure(figsize=(8, 6))
 sr_values = [256, 512, 1024]
 
-for sr in sr_values:
-    entries = enc_by_sr.get(sr, [])
-    entries_sorted = sorted(entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in entries_sorted]
-    y = [entry['bench'] for entry in entries_sorted]
-    plt.plot(x, y, marker='o', label=f'enc-sr={sr}')
+# for sr in sr_values:
+#     entries = enc_by_sr.get(sr, [])
+#     entries_sorted = sorted(entries, key=lambda x: x['l'])
+#     x = [entry['l'] for entry in entries_sorted]
+#     y = [entry['bench'] for entry in entries_sorted]
+#     plt.plot(x, y, marker='o', label=f'enc-sr={sr}')
 
-for sr in sr_values:
-    entries = prove_by_sr.get(sr, [])
-    entries_sorted = sorted(entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in entries_sorted]
-    y = [entry['bench'] for entry in entries_sorted]
-    plt.plot(x, y, marker='p', label=f'prove-sr={sr}')
+# for sr in sr_values:
+#     entries = prove_by_sr.get(sr, [])
+#     entries_sorted = sorted(entries, key=lambda x: x['l'])
+#     x = [entry['l'] for entry in entries_sorted]
+#     y = [entry['bench'] for entry in entries_sorted]
+#     plt.plot(x, y, marker='p', label=f'Prover (R={sr})')
+
+# for sr in sr_values:
+#     entries = range_by_sr.get(sr, [])
+#     entries_sorted = sorted(entries, key=lambda x: x['l'])
+#     x = [entry['l'] for entry in entries_sorted]
+#     y = [entry['bench'] for entry in entries_sorted]
+#     plt.plot(x, y, marker='^', label=f'Rangeproof (R={sr})')
 
 for sr in sr_values:
     entries = verify_by_sr.get(sr, [])
     entries_sorted = sorted(entries, key=lambda x: x['l'])
     x = [entry['l'] for entry in entries_sorted]
     y = [entry['bench'] for entry in entries_sorted]
-    print(f"Rangeproof sr={sr}: {y}")
-    plt.plot(x, y, marker='s', label=f'verify-sr={sr}')
+    plt.plot(x, y, marker='s', label=f'Verifier (R={sr})')
 
 for sr in sr_values:
-    entries = range_by_sr.get(sr, [])
-    entries_sorted = sorted(entries, key=lambda x: x['l'])
-    x = [entry['l'] for entry in entries_sorted]
-    y = [entry['bench'] for entry in entries_sorted]
-    print(f"Rangeproof sr={sr}: {y}")
-    plt.plot(x, y, marker='^', label=f'rangeproof-sr={sr}')
+    prv_entries = prove_by_sr.get(sr, [])
+    prv_entries_sorted = sorted(prv_entries, key=lambda x: x['l'])
+    rp_entries = range_by_sr.get(sr, [])
+    rp_entries_sorted = sorted(rp_entries, key=lambda x: x['l'])
+    x = [entry['l'] for entry in prv_entries_sorted]
+    y = [e1['bench'] + e2['bench'] for e1, e2 in zip(prv_entries_sorted, rp_entries_sorted)]
+    plt.plot(x, y, marker='^', label=f'Prover (R={sr})')
 
-plt.xlabel('l')
+plt.xlabel('Data size (#BLS12-381 field element)')
 plt.ylabel('Time (ms)')
 plt.title('Proof Benchmarks for sr=256, 512, 1024')
 plt.legend()
