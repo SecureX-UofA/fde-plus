@@ -1,3 +1,42 @@
+import matplotlib.pyplot as plt
+
+x_entries = [1, 8, 16, 32]
+prove_entries = [
+    [53850, 7424, 5780, 4314],
+    [97974, 13397, 9956, 8051],
+    [186305, 25589, 18902, 15127],
+]
+verify_entries = [
+    [59, 10, 9.22, 10.69],
+    [105.94, 20.65, 13.73, 14.9],
+    [222.21, 34.84, 27.21, 19.53]
+]
+
+plt.figure(figsize=(8, 6))
+sr_values = [256, 512, 1024]
+
+i = 0
+for sr in sr_values:
+    plt.plot(x_entries, prove_entries[i], marker='s', label=f'Prover (R={sr})')
+    i += 1
+
+i = 0
+for sr in sr_values:
+    y = []
+    plt.plot(x_entries, verify_entries[i], marker='^', label=f'Verifier (R={sr})')
+    i += 1
+
+plt.xlabel('# CPU Cores')
+plt.ylabel('Time (ms)')
+plt.title('SNARK Benchmarks for sr=256, 512, 1024')
+plt.legend()
+# plt.xscale('log', base=2)
+plt.xticks(x_entries)
+plt.yscale('log', base=10)
+plt.grid(True, which='both', ls='--')
+plt.tight_layout()
+plt.show()
+
 # N = 256
 # 1
 # Compile: 2.165887439s (field bits=377)
