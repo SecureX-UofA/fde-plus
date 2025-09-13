@@ -212,12 +212,18 @@ pub mod test {
         let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
         println!("Generate range proof, elapsed time: {} [s]", elapsed);
 
+        let all_ciphers = encryption_proof.ciphers.iter().map(|c| {
+            c.c1()
+        })
+        .collect();
+
         let t_start = std::time::Instant::now();
-        let proof = Proof::new(
+        let (proof, challenge) = Proof::new_v2(
             &f_poly,
             &f_s_poly,
             &encryption_sk,
             sub_encryption_proof.clone(),
+            &all_ciphers,
             &powers,
             rng,
         ).unwrap();
@@ -225,7 +231,7 @@ pub mod test {
         println!("Proving, elapsed time: {} [ms]", elapsed);
             
         let t_start = std::time::Instant::now();
-        assert!(proof.verify(com_f_poly, com_f_s_poly, encryption_pk, &powers).is_ok());
+        assert!(proof.verify_v2(com_f_poly, com_f_s_poly, encryption_pk, challenge, &powers).is_ok());
         let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
         println!("Verifying proof, elapsed time: {} [s]", elapsed);
     }
