@@ -1,4 +1,4 @@
-package snark
+package main
 
 import (
 	"fmt"
@@ -23,13 +23,15 @@ import (
 	"github.com/consensys/gnark/std/hash/mimc"
 )
 
-const N = 16 // change as needed (e.g., 1, 16, 64, 256)
+const N = 1024 // change as needed (e.g., 1, 16, 64, 256)
 
 // Circuit encodes:
-//   VK = H0^SK
-//   For i in [0..N-1]:
-//     CTP[i] = H[i]^SK + g^X[i]      (group law on BLS12-377 G1)
-//     CT[i]  = X[i] + MiMC(SK, i)    (addition in circuit field)
+//
+//	VK = H0^SK
+//	For i in [0..N-1]:
+//	  CTP[i] = H[i]^SK + g^X[i]      (group law on BLS12-377 G1)
+//	  CT[i]  = X[i] + MiMC(SK, i)    (addition in circuit field)
+//
 // Plus: range checks 0 <= SK, X[i] < r_BLS12-377.
 type Circuit struct {
 	// Public inputs
@@ -68,8 +70,8 @@ func rangeCheckFr377(api frontend.API, v frontend.Variable) error {
 	var less frontend.Variable = 0
 
 	for i := nbits - 1; i >= 0; i-- {
-		vi := bits[i]        // bit i of v (0 or 1)
-		bi := bound.Bit(i)   // bit i of bound (constant 0 or 1)
+		vi := bits[i]      // bit i of v (0 or 1)
+		bi := bound.Bit(i) // bit i of bound (constant 0 or 1)
 
 		// vi < bi  <=>  (1 - vi) && bi
 		viLtBi := api.Mul(api.Sub(1, vi), int(bi))
@@ -149,7 +151,7 @@ func mustBig(n *frbls.Element) *big.Int {
 }
 
 func main() {
-	cs, pk, vk, skBI := setup(1)
+	cs, pk, vk, skBI := setup(8)
 	pi, proof := prove(skBI, pk, cs)
 	verify(proof, vk, pi, cs)
 }
@@ -292,8 +294,8 @@ func prove(
 }
 
 func verify(
-	proof groth16.Proof, 
-	vk groth16.VerifyingKey, 
+	proof groth16.Proof,
+	vk groth16.VerifyingKey,
 	pi witness.Witness,
 	cs constraint.ConstraintSystem,
 ) {
