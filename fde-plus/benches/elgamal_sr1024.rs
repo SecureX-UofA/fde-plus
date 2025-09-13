@@ -2,6 +2,7 @@ use ark_ec::{pairing::Pairing, Group, CurveGroup};
 use ark_ff::PrimeField;
 use ark_poly::univariate::DensePolynomial;
 use ark_poly::{EvaluationDomain, Evaluations, GeneralEvaluationDomain};
+use ark_serialize::CanonicalDeserialize;
 use ark_std::{test_rng, Zero, UniformRand};
 use criterion::{criterion_group, criterion_main, Criterion};
 use fde::commit::kzg::Powers;
@@ -31,7 +32,14 @@ fn bench_proof(c: &mut Criterion) {
     let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
     const UPPER_BOUND: usize = 22;
-    let powers = Powers::<TestCurve>::unsafe_setup(tau, (1 << UPPER_BOUND).max(SIZE_SUBSET * 8) + 1);
+    
+    println!("KZG setup...");
+    let t_start = std::time::Instant::now();
+    let bytes = std::fs::read("powers.bin").unwrap();
+    let powers = Powers::deserialize_compressed(&*bytes)
+        .unwrap();
+    let elapsed = std::time::Instant::now().duration_since(t_start).as_secs();
+    println!("KZG setup, elapsed time: {} [s]", elapsed);
 
     const LAMBDA: usize = 128;
     
@@ -89,14 +97,20 @@ fn bench_proof(c: &mut Criterion) {
         sub_encryption_proof
             .generate_range_proof(&subset_evaluations.evals, &powers);
 
+        let ciphers = encryption_proof.ciphers.iter().map(|c| {
+            c.c1()
+        })
+        .collect();
+
         let proof_prv_name = format!("proof-prove-{}", suffix);
         group.bench_function(&proof_prv_name, |b| {
             b.iter(|| {
-                Proof::new(
+                Proof::new_v2(
                     &f_poly,
                     &f_s_poly,
                     &encryption_sk,
                     sub_encryption_proof.clone(),
+                    &ciphers,
                     &powers,
                     rng,
                 )
@@ -105,20 +119,20 @@ fn bench_proof(c: &mut Criterion) {
         });
         
         let proof_vfy_name = format!("proof-verify-{}", suffix);
+        let (proof, challenge)  = Proof::new_v2(
+            &f_poly,
+            &f_s_poly,
+            &encryption_sk,
+            sub_encryption_proof.clone(),
+            &ciphers,
+            &powers,
+            rng,
+        )
+        .unwrap();
         group.bench_function(&proof_vfy_name, |b| {
-            let proof = Proof::new(
-                &f_poly,
-                &f_s_poly,
-                &encryption_sk,
-                sub_encryption_proof.clone(),
-                &powers,
-                rng,
-            )
-            .unwrap();
-            
             b.iter(|| {
                 assert!(proof
-                    .verify(com_f_poly, com_f_s_poly, encryption_pk, &powers)
+                    .verify_v2(com_f_poly, com_f_s_poly, encryption_pk, challenge, &powers)
                     .is_ok())
             })
         });
