@@ -27,7 +27,6 @@ fn bench_proof(c: &mut Criterion) {
 
     let rng = &mut test_rng();
 
-    let tau = Scalar::rand(rng);
     let encryption_sk = Scalar::rand(rng);
     let encryption_pk = (<TestCurve as Pairing>::G1::generator() * encryption_sk).into_affine();
 
