@@ -103,6 +103,8 @@ for sr in sr_values:
     entries_sorted = sorted(entries, key=lambda x: x['l'])
     x = [entry['l'] for entry in entries_sorted]
     y = [entry['bench'] for entry in entries_sorted]
+    print(f'R={sr}')
+    print(f'verify y: {x}\n y: {y}')
     plt.plot(x, y, marker='s', label=f'Verifier (R={sr})')
 
 for sr in sr_values:
@@ -112,6 +114,8 @@ for sr in sr_values:
     rp_entries_sorted = sorted(rp_entries, key=lambda x: x['l'])
     x = [entry['l'] for entry in prv_entries_sorted]
     y = [e1['bench'] + e2['bench'] for e1, e2 in zip(prv_entries_sorted, rp_entries_sorted)]
+    print(f'R={sr}')
+    print(f'prove x: {x}\n y: {y}')
     plt.plot(x, y, marker='^', label=f'Prover (R={sr})')
 
 plt.xlabel('Data size (#BLS12-381 field element)')
